@@ -49,7 +49,9 @@ function fetchLogon() {
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
         try {
+          console.log("[LOGON RAW]", data.slice(0, 300));
           const json = JSON.parse(data);
+          if (!json.data) throw new Error("No data: " + JSON.stringify(json));
           resolve(json.data);
         } catch (e) {
           reject(e);
