@@ -1,7 +1,10 @@
 const WebSocket = require("ws");
 const https = require("https");
+const http = require("http");
+const { HttpsProxyAgent } = require("https-proxy-agent");
 
 const LOGON_URL = "https://ovgbhbgkndt0nk9sr.au.qnwxdhwica.com/logon";
+const PROXY_URL = process.env.PROXY_URL || null; // e.g. http://user:pass@host:port
 
 let results = [];
 let heartbeatInterval = null;
@@ -36,7 +39,7 @@ function toLooseAscii(bytes) {
 
 function fetchLogon() {
   return new Promise((resolve, reject) => {
-    const req = https.request(LOGON_URL, {
+    const options = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -44,7 +47,10 @@ function fetchLogon() {
         "Referer": "https://68gbvn88.bar/",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
       }
-    }, (res) => {
+    };
+    if (PROXY_URL) options.agent = new HttpsProxyAgent(PROXY_URL);
+
+    const req = https.request(LOGON_URL, options, (res) => {
       let data = "";
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
@@ -75,13 +81,15 @@ async function connect() {
 
     console.log(`[WS] Kết nối ${wsUrl}...`);
 
-    const ws = new WebSocket(wsUrl, {
+    const wsOptions = {
       headers: {
         "Origin": "https://68gbvn88.bar",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Referer": "https://68gbvn88.bar/"
       }
-    });
+    };
+    if (PROXY_URL) wsOptions.agent = new HttpsProxyAgent(PROXY_URL);
+    const ws = new WebSocket(wsUrl, wsOptions);
 
     ws.on("open", () => {
       console.log("[WS] Đã kết nối, handshake...");
